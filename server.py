@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 import subprocess
 import tempfile
@@ -11,10 +11,7 @@ def health():
     return {"ok": True}
 
 @app.post("/extract")
-async def extract_text(
-    file: UploadFile = File(...),
-    start_index: int = Form(1),  # ✅ 시작 index를 variable로
-):
+async def extract_text(file: UploadFile = File(...)):
     with tempfile.TemporaryDirectory() as tmp:
         pdf_path = os.path.join(tmp, "input.pdf")
         txt_path = os.path.join(tmp, "output.txt")
@@ -30,14 +27,11 @@ async def extract_text(
         with open(txt_path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
 
-    # ✅ 빈 페이지도 유지 (strip은 하되, 제거하지 않음)
+    # 페이지 경계: form feed \f
     raw_pages = content.split("\f")
 
-    result = []
-    for i, page_text in enumerate(raw_pages):
-        result.append({
-            "index": start_index + i,
-            "text": page_text.strip()  # 빈 페이지면 ""
-        })
+    # ✅ 핵심: strip() 하지 않는다 (공백/개행만 있는 페이지도 "있는 그대로" 유지)
+    # ✅ 필요하면 trailing \n 하나 정도만 정리하는 정도는 가능하지만, 일단 원문 보존이 안전
+    pages = [p for p in raw_pages]  # 그대로
 
-    return JSONResponse(content=result)
+    return JSONResponse(content=pages)
