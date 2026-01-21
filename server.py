@@ -30,8 +30,13 @@ async def extract_text(file: UploadFile = File(...)):
     # 페이지 경계: form feed \f
     raw_pages = content.split("\f")
 
-    # ✅ 핵심: strip() 하지 않는다 (공백/개행만 있는 페이지도 "있는 그대로" 유지)
-    # ✅ 필요하면 trailing \n 하나 정도만 정리하는 정도는 가능하지만, 일단 원문 보존이 안전
-    pages = [p for p in raw_pages]  # 그대로
+    # ✅ 빈 페이지 포함 + index는 0부터
+    result = [
+        {
+            "index": i,
+            "text": page
+        }
+        for i, page in enumerate(raw_pages)
+    ]
 
-    return JSONResponse(content=pages)
+    return JSONResponse(content=result)
